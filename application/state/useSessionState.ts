@@ -363,6 +363,14 @@ export const useSessionState = ({
     setSessions(prev => updateRestoredSessionStatusState(prev, sessionId, status));
   }, []);
 
+  // Jumping to a silent MCP session from TrayPanel restores it as a normal,
+  // visible tab — mirroring the intent behind manually opening it.
+  const unhideSession = useCallback((sessionId: string) => {
+    setSessions(prev => prev.map(s => (
+      s.id === sessionId && s.hiddenFromTabs ? { ...s, hiddenFromTabs: undefined } : s
+    )));
+  }, []);
+
   const updateSessionFontSize = useCallback((sessionId: string, fontSize: number) => {
     setSessions(prev => prev.map(s => (
       s.id === sessionId ? { ...s, fontSize, fontSizeOverride: true } : s
@@ -1142,6 +1150,7 @@ export const useSessionState = ({
     closeSessions,
     closeWorkspace,
     updateSessionStatus,
+    unhideSession,
     updateSessionFontSize,
     clearSessionFontSizeOverride,
     createWorkspaceWithHosts,

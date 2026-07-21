@@ -5,6 +5,7 @@ import {
   flushQueuedTrayPanelConnectHostsImpl,
   handleConnectToHostImpl,
   handleKeyboardInteractiveSubmitImpl,
+  handleTrayJumpToSessionImpl,
   handleTrayPanelConnectRequestImpl,
 } from './app/AppHandlers.ts';
 import type { Host } from '../types';
@@ -84,6 +85,53 @@ test('connect serial host handler returns the created terminal tab id', () => {
   );
 
   assert.equal(result, 'serial-session');
+});
+
+test('jumping to a silent MCP session from the tray panel makes it a visible tab', () => {
+  const hiddenSession = {
+    id: 'session-hidden',
+    hostId: baseHost.id,
+    hostname: baseHost.hostname,
+    hiddenFromTabs: true,
+  };
+  let activeTabId: string | null = null;
+  const unhiddenSessionIds: string[] = [];
+
+  handleTrayJumpToSessionImpl(
+    () => ({
+      sessions: [hiddenSession],
+      setActiveTabId: (id: string) => {
+        activeTabId = id;
+      },
+      setWorkspaceFocusedSession: () => {},
+      unhideSession: (sessionId: string) => unhiddenSessionIds.push(sessionId),
+    }),
+    'session-hidden',
+  );
+
+  assert.deepEqual(unhiddenSessionIds, ['session-hidden']);
+  assert.equal(activeTabId, 'session-hidden');
+});
+
+test('jumping to an already-visible session does not call unhideSession', () => {
+  const visibleSession = {
+    id: 'session-visible',
+    hostId: baseHost.id,
+    hostname: baseHost.hostname,
+  };
+  const unhiddenSessionIds: string[] = [];
+
+  handleTrayJumpToSessionImpl(
+    () => ({
+      sessions: [visibleSession],
+      setActiveTabId: () => {},
+      setWorkspaceFocusedSession: () => {},
+      unhideSession: (sessionId: string) => unhiddenSessionIds.push(sessionId),
+    }),
+    'session-visible',
+  );
+
+  assert.deepEqual(unhiddenSessionIds, []);
 });
 
 test('tray panel connect request queues until the vault is initialized', () => {

@@ -50,9 +50,14 @@ export const getLogHostVisualSnapshot = (host: Host) => {
 };
 
 export function handleTrayJumpToSessionImpl(getCtx: AppContextGetter, sessionId: string) {
-  const { sessions, setActiveTabId, setWorkspaceFocusedSession } = getCtx();
+  const { sessions, setActiveTabId, setWorkspaceFocusedSession, unhideSession } = getCtx();
 {
     const session = sessions.find((item) => item.id === sessionId);
+    // Jumping from TrayPanel is the user actively opening this session — a
+    // silent MCP session should become a normal, visible tab from here on.
+    if (session?.hiddenFromTabs) {
+      unhideSession(sessionId);
+    }
     if (session?.workspaceId) {
       setActiveTabId(session.workspaceId);
       setWorkspaceFocusedSession(session.workspaceId, sessionId);
